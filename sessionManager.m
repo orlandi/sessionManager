@@ -73,7 +73,7 @@ classdef sessionManager
       %  session 'sessionName'.
       
       % Try to save the current session - cancel otherwise
-      if(~save(false))
+      if(~sessionManager.save(false))
         return;
       end
       if(nargin > 0)
