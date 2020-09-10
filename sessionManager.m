@@ -214,7 +214,11 @@ classdef sessionManager
       mainWindow.setTitle(newTitle);
       closeNoPrompt(matlab.desktop.editor.getAll);
       for it = 1:length(sessFiles.sessionEditorFiles)
-        matlab.desktop.editor.openDocument(sessFiles.sessionEditorFiles{it});
+        try
+          matlab.desktop.editor.openDocument(sessFiles.sessionEditorFiles{it});
+        catch
+          fprintf('Could not open file: %s\n', sessFiles.sessionEditorFiles{it});
+        end
       end
       matlab.desktop.editor.openDocument(sessFiles.sessionEditorFilesActive);
       try
