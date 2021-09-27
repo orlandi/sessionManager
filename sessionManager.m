@@ -37,6 +37,9 @@ classdef sessionManager
       if(~exist(fullfile(userpath, 'sessionManager'), 'dir'))
         mkdir(fullfile(userpath, 'sessionManager'));
       end
+      if(~exist(fullfile(userpath, 'sessionManager', version('-release')), 'dir'))
+        mkdir(fullfile(userpath, 'sessionManager', version('-release')));
+      end
       if(exist(fullfile(userpath, 'startup.m'), 'file'))
         answer = questdlg({sprintf('startup.m alreaddy exists in %s', userpath), 'Do you want to overwrite it?'},'Overwrite', 'No');
         switch answer
@@ -88,7 +91,7 @@ classdef sessionManager
           return;
         else
           sessionName = answer{1};
-          sessionFullFile = fullfile(userpath, 'sessionManager', [sessionName '.sess']);
+          sessionFullFile = fullfile(userpath, 'sessionManager', version('-release'), [sessionName '.sess']);
           if(exist(sessionFullFile, 'file'))
             answer = questdlg({sprintf('A session named "%s" already exists.', sessionName),'Do you want to overwrite it?'},'Overwrite session', 'No');
             switch answer
@@ -103,7 +106,7 @@ classdef sessionManager
       w = java.awt.Window.getOwnerlessWindows;
       mainWindow = w(arrayfun(@(x)(isa(x, 'com.mathworks.mde.desk.MLMainFrame')), w));
 
-      mainTitle = sprintf('MATLAB r%s (%s)', version('-release'), version('-description'));
+      mainTitle = sprintf('MATLAB r%s', version('-release'));
       newTitle = sprintf('%s - %s.sess', mainTitle, sessionName);
       mainWindow.setTitle(newTitle);
       sessionManager.save();
@@ -144,7 +147,11 @@ classdef sessionManager
         end
         switch answer
           case 'Yes'
-            sessionFullFile = fullfile(userpath, 'sessionManager', curSessionFileName);
+            sessionFullFile = fullfile(userpath, 'sessionManager', version('-release'), curSessionFileName);
+            [fpa, ~ ,~] = fileparts(sessionFullFile);
+            if(~exist(fpa, 'dir'))
+              mkdir(fpa);
+            end
             docArray = matlab.desktop.editor.getAll;
             sessionEditorFiles = cell(1,length(docArray));
             for fIdx = 1:length(docArray)
@@ -168,9 +175,7 @@ classdef sessionManager
             % Let's not save the whole workspace
             %evalin('base', sprintf('save %s -mat -v7.3', sessionFullFile));
             evalin('base', sprintf('save %s sessionName sessionEditorFiles sessionPath workingDir sessionEditorFilesActive -mat -v7.3', sessionFullFile));
-            assignin('base','lastSession', curSessionFileName)
-            evalin('base', sprintf('save %s lastSession -mat -v7.3', fullfile(userpath, 'sessionManager', 'lastSession.sess')));
-            evalin('base','clear sessionEditorFiles sessionName lastSession sessionPath workingDir sessionEditorFilesActive');
+            evalin('base','clear sessionEditorFiles sessionName sessionPath workingDir sessionEditorFilesActive');
             success = true;
           case 'No'
             success = true;
@@ -191,6 +196,7 @@ classdef sessionManager
       %  to load.
       %  - sessionManager.load('sessionName') - Automatically loads the
       %  session 'sessionName'.
+      %  - sessionManager.load('list') - Popups a dialog box with all available sessions
       
       if(~sessionManager.save(false))
           return;
@@ -199,17 +205,40 @@ classdef sessionManager
         fileName = varargin{1};
         pathName = '';
       else
-        [fileName, pathName] = uigetfile(fullfile(userpath,'sessionManager','*.sess'));
+        [fileName, pathName] = uigetfile(fullfile(userpath,'sessionManager', version('-release'), '*.sess'));
         if(isempty(fileName))
           return;
         end
       end
-      sessFiles = load(fullfile(pathName, fileName), '-mat');
-      cd(sessFiles.workingDir);
+      switch fileName
+        case 'list'
+          sessFiles = dir(fullfile(userpath,'sessionManager', version('-release'), '*.sess'));
+          if(isempty(sessFiles))
+            fprintf('sessionManager: No existing sessions found\n');
+            return;
+          end
+          sessFiles = arrayfun(@(x)strrep(x.name,'.sess',''), sessFiles, 'UniformOutput', false);
+          [indx,tf] = listdlg('ListString',sessFiles, 'PromptString',{'Select an existing session to load',...
+                              'Cancel for no session.',''},...
+                              'SelectionMode','single');
+        if(tf == 0 || isempty(indx))
+          fprintf('sessionManager: No session selected\n');
+          return;
+        end
+        pathName = fullfile(userpath,'sessionManager', version('-release'));
+        sessFiles = load(fullfile(pathName, [sessFiles{indx} '.sess']), '-mat');
+        otherwise
+          sessFiles = load(fullfile(pathName, fileName), '-mat');
+      end
+      try
+        cd(sessFiles.workingDir);
+      end
       w = java.awt.Window.getOwnerlessWindows;
       mainWindow = w(arrayfun(@(x)(isa(x, 'com.mathworks.mde.desk.MLMainFrame')), w));
-      curTiltle = mainWindow.getTitle();
-      mainTitle = sprintf('MATLAB r%s (%s)', version('-release'), version('-description'));
+      curTitle = mainWindow.getTitle();
+%       mainTitle = sprintf('MATLAB r%s (%s)', version('-release'), version('-description'));
+%       newTitle = sprintf('%s - %s', mainTitle, sessFiles.sessionName);
+      mainTitle = sprintf('MATLAB r%s', version('-release'));
       newTitle = sprintf('%s - %s', mainTitle, sessFiles.sessionName);
       mainWindow.setTitle(newTitle);
       closeNoPrompt(matlab.desktop.editor.getAll);

@@ -23,10 +23,21 @@ need to copy/edit them yourself.
 ### To load an existing session:
 - `sessionManager.load();` It asks which session to load.
 - `sessionManager.load('sessionName');` To automatically load 'sessionName'.
+- `sessionManager.load('list');` To list all existing sessions
 
 ### Notes
 - When you close MATLAB it asks if you want to save the current
-session. It will reopen that session on the next MATLAB run.
+session.
 
 - This manager modifies the main MATLAB window title to keep track
 of the current session.
+
+# Change Log
+
+## [0.0.2] - 2021-09-27
+
+### Added
+- Added compatibility for multiple MATLAB version installs
+
+### Modified
+- Changed lastSession definitions for a popup list on startup
