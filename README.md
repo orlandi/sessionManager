@@ -34,6 +34,11 @@ of the current session.
 
 # Change Log
 
+## [0.0.3] - 2021-09-27
+
+### Modified
+- Spaces are now allowed in the session name
+
 ## [0.0.2] - 2021-09-27
 
 ### Added

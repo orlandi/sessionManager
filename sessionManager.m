@@ -174,7 +174,8 @@ classdef sessionManager
             assignin('base','sessionPath', p);
             % Let's not save the whole workspace
             %evalin('base', sprintf('save %s -mat -v7.3', sessionFullFile));
-            evalin('base', sprintf('save %s sessionName sessionEditorFiles sessionPath workingDir sessionEditorFilesActive -mat -v7.3', sessionFullFile));
+            %sessionFullFile = strrep(sessionFullFile,' ','\ ');
+            evalin('base', sprintf('save \''%s\'' sessionName sessionEditorFiles sessionPath workingDir sessionEditorFilesActive -mat -v7.3', sessionFullFile));
             evalin('base','clear sessionEditorFiles sessionName sessionPath workingDir sessionEditorFilesActive');
             success = true;
           case 'No'
